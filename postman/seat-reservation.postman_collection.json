@@ -53,7 +53,7 @@
     },
     {
       "name": "Cancel reservation (OWNER)",
-      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": { "raw": "{{baseUrl}}/api/v1/reservations/{{reservationId}}/cancel", "host": ["{{baseUrl}}", "api"], "path": ["api", "v1", "reservations", "{{reservationId}}", "cancel"] } }
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": { "raw": "{{baseUrl}}/api/v1/reservations/{{reservationId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api", "v1", "reservations", "{{reservationId}}", "cancel"] } }
     }
   ]
 }
