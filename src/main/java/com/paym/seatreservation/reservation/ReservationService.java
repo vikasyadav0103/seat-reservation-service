@@ -11,6 +11,7 @@ import com.paym.seatreservation.show.domain.ReservationEntity;
 import com.paym.seatreservation.show.domain.SeatEntity;
 import com.paym.seatreservation.show.domain.SeatStatus;
 import com.paym.seatreservation.show.domain.ShowEntity;
+import com.paym.seatreservation.observability.ReservationMetrics;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -20,28 +21,34 @@ import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class ReservationService {
+	private static final Logger log = LoggerFactory.getLogger(ReservationService.class);
 
 	private final IdempotencyKeyRepository idempotencyKeyRepository;
 	private final ReservationRepository reservationRepository;
 	private final SeatRepository seatRepository;
 	private final ShowRepository showRepository;
 	private final UserShowLimitRepository userShowLimitRepository;
+	private final ReservationMetrics metrics;
 
 	ReservationService(
 		IdempotencyKeyRepository idempotencyKeyRepository,
 		ReservationRepository reservationRepository,
 		SeatRepository seatRepository,
 		ShowRepository showRepository,
-		UserShowLimitRepository userShowLimitRepository
+		UserShowLimitRepository userShowLimitRepository,
+		ReservationMetrics metrics
 	) {
 		this.idempotencyKeyRepository = idempotencyKeyRepository;
 		this.reservationRepository = reservationRepository;
 		this.seatRepository = seatRepository;
 		this.showRepository = showRepository;
 		this.userShowLimitRepository = userShowLimitRepository;
+		this.metrics = metrics;
 	}
 
 	@Transactional
@@ -57,6 +64,7 @@ public class ReservationService {
 			throw new ReservationConflictException("Idempotency key was already used for a different request");
 		}
 		if (idempotencyKeyRecord.getReservation() != null) {
+			metrics.idempotentReplay();
 			return toResponse(idempotencyKeyRecord.getReservation());
 		}
 
@@ -71,9 +79,13 @@ public class ReservationService {
 			throw new ReservationConflictException("One or more requested seats do not exist for this show");
 		}
 		if (seats.stream().anyMatch(seat -> seat.getStatus() != SeatStatus.AVAILABLE)) {
+			metrics.seatTaken();
+			log.warn("reservation_declined reason=seat-taken showId={} userId={}", showId, userId);
 			throw new ReservationConflictException("One or more requested seats are unavailable");
 		}
 		if (!userShowLimit.canReserve(seats.size())) {
+			metrics.perUserLimit();
+			log.warn("reservation_declined reason=per-user-limit showId={} userId={}", showId, userId);
 			throw new ReservationConflictException("Per-user seat limit would be exceeded");
 		}
 
@@ -84,6 +96,8 @@ public class ReservationService {
 		seats.forEach(seat -> seat.confirm(reservation));
 		userShowLimit.reserve(seats.size());
 		idempotencyKeyRecord.assignReservation(reservation);
+		metrics.confirmed();
+		log.info("reservation_confirmed reservationId={} showId={} userId={} seatCount={}", reservation.getId(), showId, userId, seats.size());
 
 		return toResponse(reservation);
 	}
@@ -132,7 +146,6 @@ public class ReservationService {
 	}
 
 	private ReservationResponse toResponse(ReservationEntity reservation) {
-		@SuppressWarnings("null")
 		List<String> seats = reservation.getSeats().stream()
 			.map(SeatEntity::getSeatNumber)
 			.sorted(Comparator.naturalOrder())

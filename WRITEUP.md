@@ -44,6 +44,23 @@ The authenticated JWT subject is the user identity. A request is atomic across a
 
 - `GET /actuator/health`
 - `GET /actuator/prometheus`
+- Readiness explicitly includes the database health indicator and fails closed when PostgreSQL is unavailable.
+- `reservations_confirmed_total` counts confirmed reservations.
+- `reservations_declined_total{reason="seat-taken|per-user-limit|idempotent-replay"}` counts declined attempts by reason.
+- `seats_available` is queried from persisted PostgreSQL seat rows, so it reconciles with API show state.
+- `X-Correlation-Id` is propagated on every request and included in log patterns; reservation logs include outcome, reason, show, user, and reservation identifiers without credentials.
+
+## Burst and deployment evidence
+
+The live service is `https://seat-reservation-service-gnm0.onrender.com`. A cold start completed successfully: Spring Boot became healthy, connected to Neon, and Flyway applied schema version 1. The local and deployed smoke flows completed successfully.
+
+The reproducible command is `scripts/burst.ps1`; it creates a fresh one-seat show, runs the hot-seat JMeter plan, prints HTTP distributions, and reads final persisted reconciliation. A local 20,000-request run produced exactly one `201`, 19,999 expected `409` conflicts, and zero errors.
+
+An approximately 20,000-client run against Render Free was also attempted. The application began returning the expected success/conflict outcomes, but the free instance saturated and Render returned gateway errors, connection timeouts, and some 500 responses. This is a hosting-capacity limitation, not evidence of a second seat sale. A larger service instance and/or distributed load generator is required to produce a clean 20,000-client capacity result.
+
+## Trade-offs and next steps
+
+The service favors consistency over availability during a database or network partition: requests fail rather than claim ownership without PostgreSQL confirmation. Holds and expiry are not part of the current API contract; reservations are confirmed atomically or rejected. At 2am, alerts should cover readiness failures, 5xx rate, conflict-rate changes, database pool exhaustion, and divergence between confirmed reservations and available-seat metrics.
 
 ## Local setup
 

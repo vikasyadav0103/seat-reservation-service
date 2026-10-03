@@ -20,7 +20,14 @@ management:
     health:
       probes:
         enabled: true
+    group:
+      readiness:
+        include: readinessState,db
       show-details: never
+
+logging:
+  pattern:
+    level: "%5p [correlationId=%X{correlationId}]"
 
 app:
   jwt:
