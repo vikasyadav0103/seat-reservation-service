@@ -32,4 +32,5 @@ public class ReservationController {
 		return ResponseEntity.created(URI.create("/api/v1/reservations/%d".formatted(response.reservation_id())))
 			.body(response);
 	}
+
 }

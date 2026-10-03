@@ -17,4 +17,8 @@ public interface SeatRepository extends JpaRepository<SeatEntity, Long> {
 		@Param("showId") long showId,
 		@Param("seatNumbers") Collection<String> seatNumbers
 	);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("select seat from SeatEntity seat where seat.id in :seatIds order by seat.id")
+	List<SeatEntity> findForUpdateByIds(@Param("seatIds") Collection<Long> seatIds);
 }

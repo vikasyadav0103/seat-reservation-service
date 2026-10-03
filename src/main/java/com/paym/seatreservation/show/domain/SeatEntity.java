@@ -55,4 +55,13 @@ public class SeatEntity {
 		this.reservation = reservation;
 		this.status = SeatStatus.CONFIRMED;
 	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public void release() {
+		this.reservation = null;
+		this.status = SeatStatus.AVAILABLE;
+	}
 }

@@ -88,6 +88,28 @@ public class ReservationService {
 		return toResponse(reservation);
 	}
 
+	@Transactional
+	public ReservationResponse cancel(long reservationId, String userId) {
+		ReservationEntity reservation = reservationRepository.findForUpdate(reservationId)
+			.orElseThrow(() -> new ReservationNotFoundException(reservationId));
+		if (!reservation.getUserId().equals(userId)) {
+			throw new ReservationAccessDeniedException();
+		}
+		if (reservation.getStatus() == com.paym.seatreservation.show.domain.ReservationStatus.CANCELLED) {
+			return toResponse(reservation);
+		}
+
+		List<Long> seatIds = reservation.getSeats().stream().map(SeatEntity::getId).toList();
+		List<SeatEntity> seats = seatRepository.findForUpdateByIds(seatIds);
+		UserShowLimitEntity userShowLimit = userShowLimitRepository.findForUpdate(
+			reservation.getShowId(), userId
+		).orElseThrow(() -> new IllegalStateException("User reservation limit was not found"));
+		seats.forEach(SeatEntity::release);
+		userShowLimit.release(seats.size());
+		reservation.cancel();
+		return toResponse(reservation);
+	}
+
 	private List<String> normalizedSeatNumbers(List<String> requestedSeatNumbers) {
 		Set<String> uniqueSeatNumbers = new HashSet<>();
 		for (String requestedSeatNumber : requestedSeatNumbers) {
@@ -110,6 +132,7 @@ public class ReservationService {
 	}
 
 	private ReservationResponse toResponse(ReservationEntity reservation) {
+		@SuppressWarnings("null")
 		List<String> seats = reservation.getSeats().stream()
 			.map(SeatEntity::getSeatNumber)
 			.sorted(Comparator.naturalOrder())

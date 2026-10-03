@@ -14,6 +14,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.time.Instant;
 
 @Entity
 @Table(name = "reservations")
@@ -36,6 +37,9 @@ public class ReservationEntity {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private ReservationStatus status;
+
+	@Column(name = "cancelled_at")
+	private Instant cancelledAt;
 
 	@ManyToMany
 	@JoinTable(
@@ -77,6 +81,11 @@ public class ReservationEntity {
 
 	public ReservationStatus getStatus() {
 		return status;
+	}
+
+	public void cancel() {
+		this.status = ReservationStatus.CANCELLED;
+		this.cancelledAt = Instant.now();
 	}
 
 	public Set<SeatEntity> getSeats() {

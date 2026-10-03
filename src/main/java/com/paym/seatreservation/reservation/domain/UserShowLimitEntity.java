@@ -30,6 +30,10 @@ public class UserShowLimitEntity {
 		reservedCount += seatCount;
 	}
 
+	public void release(int seatCount) {
+		reservedCount = Math.max(0, reservedCount - seatCount);
+	}
+
 	public boolean canReserve(int seatCount) {
 		return reservedCount + seatCount <= reservationLimit;
 	}

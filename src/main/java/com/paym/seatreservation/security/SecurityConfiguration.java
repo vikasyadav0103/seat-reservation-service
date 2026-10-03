@@ -26,6 +26,7 @@ class SecurityConfiguration {
 				.requestMatchers("/actuator/health/**", "/actuator/prometheus").permitAll()
 				.requestMatchers(HttpMethod.POST, "/api/v1/shows").hasRole("ADMIN")
 				.requestMatchers(HttpMethod.POST, "/api/v1/shows/*/reservations").hasRole("USER")
+				.requestMatchers(HttpMethod.POST, "/api/v1/reservations/*/cancel").hasRole("USER")
 				.requestMatchers(HttpMethod.GET, "/api/v1/shows/**").authenticated()
 				.anyRequest().authenticated())
 			.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))

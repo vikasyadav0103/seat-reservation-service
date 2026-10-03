@@ -109,6 +109,37 @@ class ReservationApiIntegrationTests {
 	}
 
 	@Test
+	void ownerCanCancelAndSeatBecomesAvailableAgain() throws Exception {
+		long showId = createShow("A1");
+		long reservationId = reserve(showId, "user-1", "A1", "cancel-key");
+
+		mockMvc.perform(post("/api/v1/reservations/{reservationId}/cancel", reservationId)
+				.with(jwtFor("user-1")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("CANCELLED"));
+
+		reserve(showId, "user-2", "A1", "after-cancel");
+	}
+
+	@Test
+	void onlyOwnerCanCancelAndRepeatedCancelIsIdempotent() throws Exception {
+		long showId = createShow("A1");
+		long reservationId = reserve(showId, "user-1", "A1", "owner-key");
+
+		mockMvc.perform(post("/api/v1/reservations/{reservationId}/cancel", reservationId)
+				.with(jwtFor("user-2")))
+			.andExpect(status().isForbidden());
+
+		mockMvc.perform(post("/api/v1/reservations/{reservationId}/cancel", reservationId)
+				.with(jwtFor("user-1")))
+			.andExpect(status().isOk());
+		mockMvc.perform(post("/api/v1/reservations/{reservationId}/cancel", reservationId)
+				.with(jwtFor("user-1")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("CANCELLED"));
+	}
+
+	@Test
 	void perUserLimitIsEnforced() throws Exception {
 		long showId = createShow("A1", "A2", "A3", "A4", "A5");
 		reserve(showId, "user-1", "A1", "one");
@@ -169,12 +200,15 @@ class ReservationApiIntegrationTests {
 		return ((Number) com.jayway.jsonpath.JsonPath.read(result.getResponse().getContentAsString(), "$.id")).longValue();
 	}
 
-	private void reserve(long showId, String userId, String seat, String key) throws Exception {
-		mockMvc.perform(post("/api/v1/shows/{showId}/reservations", showId)
+	private long reserve(long showId, String userId, String seat, String key) throws Exception {
+		MvcResult result = mockMvc.perform(post("/api/v1/shows/{showId}/reservations", showId)
 				.with(jwtFor(userId))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"seats\":[\"%s\"],\"idempotency_key\":\"%s\"}".formatted(seat, key)))
-			.andExpect(status().isCreated());
+			.andExpect(status().isCreated())
+			.andReturn();
+		return ((Number) com.jayway.jsonpath.JsonPath.read(
+			result.getResponse().getContentAsString(), "$.reservation_id")).longValue();
 	}
 
 	private RequestPostProcessor jwtFor(String subject) {
