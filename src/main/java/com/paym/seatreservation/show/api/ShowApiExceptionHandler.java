@@ -2,6 +2,7 @@ package com.paym.seatreservation.show.api;
 
 import com.paym.seatreservation.show.DuplicateSeatNumberException;
 import com.paym.seatreservation.show.ShowNotFoundException;
+import com.paym.seatreservation.reservation.ReservationConflictException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -20,6 +21,13 @@ class ShowApiExceptionHandler {
 	@ExceptionHandler(ShowNotFoundException.class)
 	ProblemDetail handleShowNotFound(ShowNotFoundException exception) {
 		ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+		problem.setDetail(exception.getMessage());
+		return problem;
+	}
+
+	@ExceptionHandler(ReservationConflictException.class)
+	ProblemDetail handleReservationConflict(ReservationConflictException exception) {
+		ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.CONFLICT);
 		problem.setDetail(exception.getMessage());
 		return problem;
 	}

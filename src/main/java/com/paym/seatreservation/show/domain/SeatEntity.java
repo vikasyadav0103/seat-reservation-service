@@ -23,6 +23,10 @@ public class SeatEntity {
 	@JoinColumn(name = "show_id", nullable = false)
 	private ShowEntity show;
 
+	@ManyToOne
+	@JoinColumn(name = "reservation_id")
+	private ReservationEntity reservation;
+
 	@Column(name = "seat_number", nullable = false)
 	private String seatNumber;
 
@@ -45,5 +49,10 @@ public class SeatEntity {
 
 	public SeatStatus getStatus() {
 		return status;
+	}
+
+	public void confirm(ReservationEntity reservation) {
+		this.reservation = reservation;
+		this.status = SeatStatus.CONFIRMED;
 	}
 }
