@@ -2,6 +2,7 @@ package com.paym.seatreservation.reservation;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -137,6 +138,30 @@ class ReservationApiIntegrationTests {
 				.with(jwtFor("user-1")))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("CANCELLED"));
+	}
+
+	@Test
+	void showCountsReconcileWithPersistedSeatStatesAfterCancel() throws Exception {
+		long showId = createShow("A1", "A2", "A3");
+		long reservationId = reserve(showId, "user-1", "A1", "reconcile-1");
+		reserve(showId, "user-2", "A2", "reconcile-2");
+
+		mockMvc.perform(post("/api/v1/reservations/{reservationId}/cancel", reservationId)
+				.with(jwtFor("user-1")))
+			.andExpect(status().isOk());
+
+		mockMvc.perform(get("/api/v1/shows/{showId}", showId)
+				.with(jwtFor("user-1")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.total_seats").value(3))
+			.andExpect(jsonPath("$.available").value(2))
+			.andExpect(jsonPath("$.held").value(0))
+			.andExpect(jsonPath("$.confirmed").value(1));
+
+		org.junit.jupiter.api.Assertions.assertEquals(2, jdbcTemplate.queryForObject(
+			"select count(*) from seats where show_id = ? and status = 'AVAILABLE'", Integer.class, showId));
+		org.junit.jupiter.api.Assertions.assertEquals(1, jdbcTemplate.queryForObject(
+			"select count(*) from seats where show_id = ? and status = 'CONFIRMED'", Integer.class, showId));
 	}
 
 	@Test
