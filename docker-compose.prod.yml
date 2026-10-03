@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    environment:
+      APP_ENV: prod
+      PROD_DB_HOST: ${PROD_DB_HOST:?PROD_DB_HOST must be set}
+      PROD_DB_PORT: ${PROD_DB_PORT:-5432}
+      PROD_DB_NAME: ${PROD_DB_NAME:?PROD_DB_NAME must be set}
+      PROD_DB_USERNAME: ${PROD_DB_USERNAME:?PROD_DB_USERNAME must be set}
+      PROD_DB_PASSWORD: ${PROD_DB_PASSWORD:?PROD_DB_PASSWORD must be set}
+      PROD_DB_SSL_MODE: ${PROD_DB_SSL_MODE:-require}
+      PROD_DB_CHANNEL_BINDING: ${PROD_DB_CHANNEL_BINDING:-require}
+      DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-10}
+      DB_POOL_MIN_IDLE: ${DB_POOL_MIN_IDLE:-2}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      JWT_EXPIRATION_SECONDS: ${JWT_EXPIRATION_SECONDS:-3600}
+    ports:
+      - "8080:8080"
