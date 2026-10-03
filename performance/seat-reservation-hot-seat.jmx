@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Seat Reservation Hot Seat Contention" enabled="true">
+      <stringProp name="TestPlan.comments">Pre-create one show with A1, then run with -JSHOW_ID and -JUSER_TOKEN.</stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp><boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments"><collectionProp name="Arguments.arguments">
+        <elementProp name="HOST" elementType="Argument"><stringProp name="Argument.name">HOST</stringProp><stringProp name="Argument.value">${__P(HOST,127.0.0.1)}</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp>
+        <elementProp name="PORT" elementType="Argument"><stringProp name="Argument.name">PORT</stringProp><stringProp name="Argument.value">${__P(PORT,8080)}</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp>
+        <elementProp name="SHOW_ID" elementType="Argument"><stringProp name="Argument.name">SHOW_ID</stringProp><stringProp name="Argument.value">${__P(SHOW_ID,)}</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp>
+        <elementProp name="USER_TOKEN" elementType="Argument"><stringProp name="Argument.name">USER_TOKEN</stringProp><stringProp name="Argument.value">${__P(USER_TOKEN,)}</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp>
+      </collectionProp></elementProp>
+      <stringProp name="TestPlan.user_define_classpath"></stringProp>
+    </TestPlan>
+    <hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Concurrent attempts for A1" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp><elementProp name="ThreadGroup.main_controller" elementType="LoopController"><boolProp name="LoopController.continue_forever">false</boolProp><stringProp name="LoopController.loops">${__P(LOOPS,1)}</stringProp></elementProp><stringProp name="ThreadGroup.num_threads">${__P(THREADS,50)}</stringProp><stringProp name="ThreadGroup.ramp_time">${__P(RAMP_SECONDS,1)}</stringProp><longProp name="ThreadGroup.start_time">0</longProp><longProp name="ThreadGroup.end_time">0</longProp><boolProp name="ThreadGroup.scheduler">false</boolProp><stringProp name="ThreadGroup.duration"></stringProp><stringProp name="ThreadGroup.delay"></stringProp>
+      </ThreadGroup>
+      <hashTree>
+        <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="User authorization" enabled="true"><collectionProp name="HeaderManager.headers"><elementProp name="content" elementType="Header"><stringProp name="Header.name">Content-Type</stringProp><stringProp name="Header.value">application/json</stringProp></elementProp><elementProp name="auth" elementType="Header"><stringProp name="Header.name">Authorization</stringProp><stringProp name="Header.value">Bearer ${USER_TOKEN}</stringProp></elementProp></collectionProp></HeaderManager><hashTree/>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Hot seat reservation attempt" enabled="true"><boolProp name="HTTPSampler.postBodyRaw">true</boolProp><elementProp name="HTTPsampler.Arguments" elementType="Arguments"><collectionProp name="Arguments.arguments"><elementProp name="body" elementType="HTTPArgument"><boolProp name="HTTPArgument.always_encode">false</boolProp><stringProp name="Argument.value">{"seats":["A1"],"idempotency_key":"hot-seat-${__threadNum}-${__iterationNum}"}</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp></collectionProp></elementProp><stringProp name="HTTPSampler.domain">${HOST}</stringProp><stringProp name="HTTPSampler.port">${PORT}</stringProp><stringProp name="HTTPSampler.protocol">http</stringProp><stringProp name="HTTPSampler.path">/api/v1/shows/${SHOW_ID}/reservations</stringProp><stringProp name="HTTPSampler.method">POST</stringProp><stringProp name="HTTPSampler.follow_redirects">true</stringProp><stringProp name="HTTPSampler.use_keepalive">true</stringProp></HTTPSamplerProxy>
+        <hashTree><JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Accept expected 201 or 409" enabled="true"><stringProp name="scriptLanguage">groovy</stringProp><stringProp name="script">def code = prev.getResponseCode(); if (code == '201' || code == '409') { prev.setSuccessful(true) }</stringProp><stringProp name="parameters"></stringProp><stringProp name="filename"></stringProp><stringProp name="cacheKey">true</stringProp></JSR223PostProcessor><hashTree/></hashTree>
+      </hashTree>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>
