@@ -11,6 +11,16 @@ $ErrorActionPreference = "Stop"
 $base = $BaseUrl.TrimEnd('/')
 $uri = [uri]$base
 $headers = @{ Authorization = "Bearer $AdminToken" }
+$ready = $false
+1..60 | ForEach-Object {
+  if (-not $ready) {
+    try {
+      $health = Invoke-RestMethod -Uri "$base/actuator/health" -TimeoutSec 3
+      $ready = $health.status -eq 'UP'
+    } catch { Start-Sleep -Seconds 2 }
+  }
+}
+if (-not $ready) { throw "Application did not become healthy at $base within 120 seconds" }
 $body = @{ name = "Burst $(Get-Date -Format s)"; seats = @('A1'); price_paise = 25000 } | ConvertTo-Json -Compress
 $show = Invoke-RestMethod -Method Post -Uri "$base/api/v1/shows" -Headers $headers -ContentType "application/json" -Body $body
 $result = Join-Path $PSScriptRoot "../performance/burst-results.jtl"
