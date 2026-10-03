@@ -1,46 +1,17 @@
 services:
-  postgres:
-    image: postgres:18.1
-    environment:
-      POSTGRES_DB: ${LOCAL_DB_NAME:-seat_reservation}
-      POSTGRES_USER: ${LOCAL_DB_USERNAME:-seat_reservation}
-      POSTGRES_PASSWORD: ${LOCAL_DB_PASSWORD:-seat_reservation}
-    ports:
-      - "${LOCAL_DB_PORT:-5432}:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   app:
     build: .
     environment:
       APP_ENV: ${APP_ENV:-local}
-      LOCAL_DB_HOST: postgres
-      LOCAL_DB_PORT: 5432
-      LOCAL_DB_NAME: ${LOCAL_DB_NAME:-seat_reservation}
-      LOCAL_DB_USERNAME: ${LOCAL_DB_USERNAME:-seat_reservation}
-      LOCAL_DB_PASSWORD: ${LOCAL_DB_PASSWORD:-seat_reservation}
+      LOCAL_DB_HOST: ${LOCAL_DB_HOST:?LOCAL_DB_HOST must be set}
+      LOCAL_DB_PORT: ${LOCAL_DB_PORT:-5432}
+      LOCAL_DB_NAME: ${LOCAL_DB_NAME:?LOCAL_DB_NAME must be set}
+      LOCAL_DB_USERNAME: ${LOCAL_DB_USERNAME:?LOCAL_DB_USERNAME must be set}
+      LOCAL_DB_PASSWORD: ${LOCAL_DB_PASSWORD:?LOCAL_DB_PASSWORD must be set}
       LOCAL_DB_SSL_MODE: ${LOCAL_DB_SSL_MODE:-disable}
-      PROD_DB_HOST: ${PROD_DB_HOST:-}
-      PROD_DB_PORT: ${PROD_DB_PORT:-5432}
-      PROD_DB_NAME: ${PROD_DB_NAME:-}
-      PROD_DB_USERNAME: ${PROD_DB_USERNAME:-}
-      PROD_DB_PASSWORD: ${PROD_DB_PASSWORD:-}
-      PROD_DB_SSL_MODE: ${PROD_DB_SSL_MODE:-require}
-      PROD_DB_CHANNEL_BINDING: ${PROD_DB_CHANNEL_BINDING:-require}
       DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-10}
       DB_POOL_MIN_IDLE: ${DB_POOL_MIN_IDLE:-2}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       JWT_EXPIRATION_SECONDS: ${JWT_EXPIRATION_SECONDS:-3600}
     ports:
       - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-volumes:
-  postgres-data:

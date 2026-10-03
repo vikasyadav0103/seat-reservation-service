@@ -23,3 +23,12 @@ For the assignment's approximately 20,000 concurrent attempts, use a sufficientl
 ```
 
 The script prints HTTP outcome counts and final seat reconciliation. Render Free passed cold start, Neon connectivity, Flyway, and functional smoke tests, but saturated during the 20,000-client burst with gateway/time-out errors. That capacity result is documented in `WRITEUP.md`; a larger instance or distributed load generator is required for a clean capacity run.
+
+Docker Compose runs only the backend and connects to the existing database configured by `LOCAL_DB_*` or `PROD_DB_*`; it does not create a second PostgreSQL container.
+
+Compose database separation:
+
+- Local Docker PostgreSQL: `docker compose up --build`
+- Neon-backed local production check: `docker compose -f docker-compose.prod.yml up --build`
+
+The production Compose file starts only the backend and never starts a local PostgreSQL container.
