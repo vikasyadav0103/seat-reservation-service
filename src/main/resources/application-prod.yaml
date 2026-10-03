@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${PROD_DB_HOST}:${PROD_DB_PORT}/${PROD_DB_NAME}?sslmode=${PROD_DB_SSL_MODE:require}&channelBinding=${PROD_DB_CHANNEL_BINDING:require}
+    username: ${PROD_DB_USERNAME}
+    password: ${PROD_DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}

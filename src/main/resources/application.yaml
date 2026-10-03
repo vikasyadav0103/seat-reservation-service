@@ -3,13 +3,6 @@ spring:
     name: seat-reservation
   profiles:
     active: ${APP_ENV:local}
-  datasource:
-    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD:}
-    hikari:
-      maximum-pool-size: ${DB_POOL_MAX_SIZE}
-      minimum-idle: ${DB_POOL_MIN_IDLE}
   jpa:
     hibernate:
       ddl-auto: validate
