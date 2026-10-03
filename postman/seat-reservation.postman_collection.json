@@ -1,0 +1,59 @@
+{
+  "info": {
+    "name": "Seat Reservation Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://seat-reservation-service-gnm0.onrender.com" },
+    { "key": "jwtSecret", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "userToken", "value": "" },
+    { "key": "showId", "value": "" },
+    { "key": "reservationId", "value": "" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function b64url(value) {",
+          "  return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(value)).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+          "}",
+          "function token(subject, role) {",
+          "  const secret = pm.collectionVariables.get('jwtSecret');",
+          "  if (!secret || secret.length < 32) throw new Error('Set jwtSecret in the collection variables first.');",
+          "  const now = Math.floor(Date.now() / 1000);",
+          "  const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));",
+          "  const payload = b64url(JSON.stringify({ sub: subject, roles: [role], iat: now, exp: now + 3600 }));",
+          "  const unsigned = header + '.' + payload;",
+          "  const signature = CryptoJS.HmacSHA256(unsigned, secret).toString(CryptoJS.enc.Base64).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+          "  return unsigned + '.' + signature;",
+          "}",
+          "pm.collectionVariables.set('adminToken', token('admin-postman-test', 'ADMIN'));",
+          "pm.collectionVariables.set('userToken', token('user-postman-test', 'USER'));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Create show (ADMIN)",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Created', () => pm.response.to.have.status(201));", "pm.collectionVariables.set('showId', pm.response.json().id);"] } }],
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman Production Test\",\n  \"seats\": [\"A1\", \"A2\"],\n  \"price_paise\": 25000\n}" }, "url": { "raw": "{{baseUrl}}/api/v1/shows", "host": ["{{baseUrl}}"], "path": ["api", "v1", "shows"] } }
+    },
+    {
+      "name": "Get show (USER)",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": { "raw": "{{baseUrl}}/api/v1/shows/{{showId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "shows", "{{showId}}"] } }
+    },
+    {
+      "name": "Reserve A1 (USER)",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Reserved', () => pm.response.to.have.status(201));", "pm.collectionVariables.set('reservationId', pm.response.json().reservation_id);"] } }],
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"seats\": [\"A1\"],\n  \"idempotency_key\": \"postman-{{$guid}}\"\n}" }, "url": { "raw": "{{baseUrl}}/api/v1/shows/{{showId}}/reservations", "host": ["{{baseUrl}}"], "path": ["api", "v1", "shows", "{{showId}}", "reservations"] } }
+    },
+    {
+      "name": "Cancel reservation (OWNER)",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": { "raw": "{{baseUrl}}/api/v1/reservations/{{reservationId}}/cancel", "host": ["{{baseUrl}}", "api"], "path": ["api", "v1", "reservations", "{{reservationId}}", "cancel"] } }
+    }
+  ]
+}
